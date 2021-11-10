@@ -3,24 +3,23 @@
 
 // Compilar para Arduino Micro
 
-//@cadupalmieri 
+//@cadupalmieri
 //V1.0 - 02/11/2021
 //V1.1 - 09/11/2021
 
 
-//#include <MIDI.h>
+#include <MIDI.h>
 #include "MIDIUSB.h"
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 
 
 #define n_linha 10                     // Quantidade de n_linha.
 #define n_coluna 14                     // Quantidade de n_coluna.
 #define DEBOUNCE_LENGTH 5
 
-#define canal 6
 
-//SoftwareSerial softSerial(A5, A4);
-//MIDI_CREATE_INSTANCE(SoftwareSerial, softSerial, MIDI);
+SoftwareSerial softSerial(A5, A4);
+MIDI_CREATE_INSTANCE(SoftwareSerial, softSerial, MIDI);
 
 #define demux_A0 13
 #define demux_A1 5
@@ -154,11 +153,11 @@ void demux(int linha) {
 }
 void setup() {
   delay(3000);
- // MIDI.begin(canal);
+  MIDI.begin(0);
+
   for (int i = 0; i < n_coluna; i++) {
     pinMode(pino_coluna[i], INPUT_PULLUP);
   }
-
 
   pinMode(demux_A0, OUTPUT);
   pinMode(demux_A1, OUTPUT);
@@ -177,26 +176,22 @@ void setup() {
   digitalWrite(4, HIGH);
 
   for (int n = 0; n < 61; n++) {
-    noteOff(canal - 1, n + 36, 0);
-   // MIDI.sendNoteOff(n + 36, 0, canal);
+    noteOff(0, n + 36, 0);
+    noteOff(1, n + 36, 0);
+    noteOff(2, n + 36, 0);
+    noteOff(3, n + 36, 0);
+    MIDI.sendNoteOff(n + 36, 0, 0);
+    MIDI.sendNoteOff(n + 36, 0, 1);
+    MIDI.sendNoteOff(n + 36, 0, 2);
+    MIDI.sendNoteOff(n + 36, 0, 3);
   }
 
-  encoder_init();
 
 }
 void loop() {
   encoder();
-  //escala();
 }
 
-void escala() {
-  for (int n = 0; n < 61; n++) {
-   // MIDI.sendNoteOn(n + 36, 127, canal);
-    delay(DEBOUNCE_LENGTH * 50);
-   // MIDI.sendNoteOff(n + 36, 0, canal);
-    delay(DEBOUNCE_LENGTH * 50);
-  }
-}
 
 void encoder() {
   for (int n = 0; n < n_linha; n++) {
@@ -204,57 +199,57 @@ void encoder() {
 
     for (int i = 0; i < n_coluna; i++) {
       notas_temp = !digitalRead(pino_coluna[i]);
-      if (notas[i + n * 14] != notas_temp) {
+
+      byte nota = i + n * 14;
+      if (notas[nota] != notas_temp) {
         delay(DEBOUNCE_LENGTH);
         if (notas_temp == !digitalRead(pino_coluna[i])) {
-          notas[i + n * 14] = notas_temp;
+          notas[nota] = notas_temp;
 
-          for (int i = 0; i < n_linha *  n_coluna; i++) {
-            Serial.print(notas[i]);
-            if (i % 14 == 13) {
-              Serial.print(" ");
-            }
-            if (i == 61) {
-              //Serial.print(" - ");
-            }
 
-            if (i == 122) {
-              // Serial.print(" - ");
+
+          if (notas[nota] == 1) {
+            if (nota >= 0 and nota <= 12) {
+              MIDI.sendNoteOn(nota + 24, 127, 0);
+              noteOn(0, nota + 24 , 127);
+            }
+            else if (nota >= 14 and nota <= 57) {
+              MIDI.sendNoteOn(nota  + 27, 127, 1);
+              noteOn(1, nota + 27 , 127);
+            }
+            else  if (nota >= 70 and nota <= 113) {
+              MIDI.sendNoteOn(nota - 29, 127, 2);
+              noteOn(2, nota - 29 , 127);
+            }
+            else if (nota == 13 or (nota >= 58 and nota <= 69) or nota >= 114) {
+              MIDI.sendNoteOn(nota - 58, 127, 3);
+              noteOn(3, nota - 58 , 127);
+            }
+            else {
             }
           }
-          Serial.println();
 
-
-          if (notas[i + n * 14] == 1) {
-           // MIDI.sendNoteOn(i + n * 14 + 36, 127, canal);
-            noteOn(canal - 1, i + n * 14 + 36, 127);
-          }
           else {
-          //  MIDI.sendNoteOff(i + n * 14 + 36, 0, canal);
-            noteOff(canal - 1, i + n * 14 + 36, 0);
+
+            if (nota >= 0 and nota <= 12) {
+              MIDI.sendNoteOff(nota + 24, 0, 0);
+              noteOff(0, nota + 24 , 0);
+            }
+            else if (nota >= 14 and nota <= 57) {
+              MIDI.sendNoteOff(nota  + 27, 0, 1);
+              noteOff(1, nota + 27 , 0);
+            }
+            else  if (nota >= 70 and nota <= 113) {
+              MIDI.sendNoteOff(nota - 29, 0, 2);
+              noteOff(2, nota - 29 , 0);
+            }
+            else if (nota == 13 or (nota >= 58 and nota <= 69) or nota >= 114) {
+              MIDI.sendNoteOff(nota - 58, 0,3);
+              noteOff(3, nota - 58 , 0);
+            }
+            else {
+            }
           }
-        }
-      }
-    }
-  }
-}
-
-void encoder_init() {
-  for (int n = 0; n < n_linha; n++) {
-    demux(n_linha);
-    for (int i = 0; i < n_coluna; i++) {
-      notas_temp = !digitalRead(pino_coluna[i]);
-      if (notas[i + n * 14] != notas_temp) {
-        delay(DEBOUNCE_LENGTH);
-        notas[i + n * 14] = notas_temp;
-
-        if (notas[i + n * 14] == 1) {
-         // MIDI.sendNoteOn(i + n * 14 + 36, 127, canal);
-          noteOn(canal - 1, i + n * 14 + 36, 127);
-        }
-        else {
-         // MIDI.sendNoteOff(i + n * 14 + 36, 0, canal);
-          noteOff(canal - 1, i + n * 14 + 36, 0);
         }
       }
     }
