@@ -3,9 +3,17 @@
 
 // Compilar para Arduino Micro
 
+
+//Entradas  1 a  13 - Notas pedaleira       - canal 1
+//Entradas 15 a  58 - Notas primeiro manual - canal 2
+//Entradas 71 a 114 - Notas segundo manual  - canal 3
+//Entrada  14, 59 a 70 e 115 - 140 - Botões - canal 4
+
+
 //@cadupalmieri
 //V1.0 - 02/11/2021
 //V1.1 - 09/11/2021
+//V1.2 - 10/11/2021
 
 
 #include <MIDI.h>
